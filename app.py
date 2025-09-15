@@ -4,9 +4,18 @@ from pydantic import BaseModel
 from chains.conversational_chain import build_chain
 from chains.classify_intent import classify_intent
 from langchain_core.messages import HumanMessage
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with your frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 qa_chain, memory = build_chain()
 
@@ -32,6 +41,10 @@ async def chat(query: QueryInput):
         "answer": "Sorry, I wasn't able to find a good answer for that.",
         "sources": []
     }
+
+@app.get("/")
+async def root():
+    return {"message": "Happy RAG is running."}
 
 if __name__ == "__main__":
     import uvicorn
