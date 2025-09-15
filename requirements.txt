@@ -1,0 +1,7 @@
+langchain
+qdrant-client
+openai
+tqdm
+python-dotenv
+fastapi
+uvicorn
