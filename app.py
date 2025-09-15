@@ -47,8 +47,9 @@ async def chat(request: ChatRequest):
                     d.metadata.get("source", "Unknown") for d in result.get("source_documents", [])
                 ]
             }
-        else:
-            # Use the fallback LLM chain
+
+        elif intent == "meta":
+            # Use fallback LLM chain to answer meta/conversational questions
             recent_messages = memory.chat_memory.messages[-8:]
             response = fallback_chain.invoke({
                 "history": recent_messages,
@@ -57,6 +58,12 @@ async def chat(request: ChatRequest):
             memory.chat_memory.add_ai_message(response.content)
             return {
                 "answer": response.content,
+                "sources": []
+            }
+
+        else:  # non-question or small talk
+            return {
+                "answer": "Got it!",
                 "sources": []
             }
 

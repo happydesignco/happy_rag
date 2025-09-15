@@ -10,9 +10,9 @@ intent_llm = ChatOpenAI(model="gpt-4o", temperature=0)
 intent_prompt = ChatPromptTemplate.from_messages([
     ("system", (
         "You are a helpful assistant that classifies user input into one of the following types:\n"
-        "- 'question' if the user is asking something they want an answer to\n"
-        "- 'meta' if the user is talking about the conversation, their previous message, or how the AI should behave\n"
-        "- 'non-question' if it's just a comment or something that doesn't require an answer\n"
+        "- 'question': factual or knowledge-based query, usually answered with info from documents or general knowledge\n"
+        "- 'meta': any message about the conversation itself, such as 'what did I just say?', 'what's my name?', 'what did you mean earlier?', or requests about the assistant’s behavior\n"
+        "- 'non-question': comments or other input that doesn’t ask a question\n"
         "Respond with just the category name: 'question', 'meta', or 'non-question'."
     )),
     ("human", "{input}")
