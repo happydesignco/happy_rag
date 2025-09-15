@@ -22,7 +22,7 @@ def get_last_user_question(memory):
     return "I don’t have your previous question."
 
 # Use a general-purpose chat LLM for fallback responses
-fallback_llm = ChatOpenAI(model="gpt‑3.5‑turbo")
+fallback_llm = ChatOpenAI(model="gpt-4o")
 
 # LLM chain to generate contextual fallback responses
 fallback_prompt = ChatPromptTemplate.from_messages([

@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 # Create an LLM instance (you can switch to gpt-3.5-turbo if preferred)
-intent_llm = ChatOpenAI(model="gpt‑3.5‑turbo", temperature=0)
+intent_llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
 # Define the prompt for classifying intent
 intent_prompt = ChatPromptTemplate.from_messages([
