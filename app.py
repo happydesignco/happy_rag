@@ -1,65 +1,68 @@
-# app.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from query import build_chain, classify_intent, fallback_chain, format_history_for_prompt, convert_history_to_messages
-from langchain_core.messages import HumanMessage, AIMessage
-import os
-
+from query import fallback_chain, classify_intent
+from chains.conversational_chain import build_chain
 
 app = FastAPI()
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or replace with your frontend domain
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Set up chain and memory
 qa_chain, memory = build_chain()
 
-class QueryInput(BaseModel):
-    query: str
-    history: list[dict] = []
+class ChatRequest(BaseModel):
+    history: list[dict]
+    question: str
 
 @app.post("/chat")
-async def chat(query: QueryInput):
-    user_input = query.query.strip()
-    chat_history = convert_history_to_messages(query.history)
+async def chat(request: ChatRequest):
+    user_input = request.question
+    history = request.history
 
     # Update memory
-    memory.chat_memory.messages = chat_history
+    for turn in history:
+        if "user" in turn:
+            memory.chat_memory.add_user_message(turn["user"])
+        if "ai" in turn:
+            memory.chat_memory.add_ai_message(turn["ai"])
+    memory.chat_memory.add_user_message(user_input)
 
-    # Classify the user's intent
+    # Classify user intent
     intent = classify_intent(user_input)
+    print(f"Intent: {intent}")
 
-    if intent == "question":
-        result = qa_chain.invoke({"question": user_input})
+    try:
+        if intent == "question":
+            # Use the RAG pipeline
+            result = qa_chain.invoke({"question": user_input})
+            memory.chat_memory.add_ai_message(result["answer"])
+            return {
+                "answer": result["answer"],
+                "sources": [
+                    d.metadata.get("source", "Unknown") for d in result.get("source_documents", [])
+                ]
+            }
+        else:
+            # Use the fallback LLM chain
+            recent_messages = memory.chat_memory.messages[-8:]
+            response = fallback_chain.invoke({
+                "history": recent_messages,
+                "input": user_input
+            })
+            memory.chat_memory.add_ai_message(response.content)
+            return {
+                "answer": response.content,
+                "sources": []
+            }
+
+    except Exception as e:
+        print("⚠️ Error in chat endpoint:", e)
         return {
-            "answer": result["answer"],
-            "sources": [doc.metadata.get("source", "Unknown") for doc in result["source_documents"]]
+            "answer": "⚠️ Something went wrong. Please try again.",
+            "sources": []
         }
-
-    # Otherwise, use fallback LLM to respond conversationally
-    history_str = format_history_for_prompt(memory.chat_memory.messages)
-    response = fallback_chain.invoke({
-        "history": history_str,
-        "input": user_input
-    })
-
-    return {
-        "answer": response.content,
-        "sources": []  # fallback response has no document sources
-    }
-
-@app.get("/")
-async def root():
-    return {"message": "Happy RAG is running."}
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
