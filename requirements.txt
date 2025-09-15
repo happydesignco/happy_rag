@@ -1,8 +1,10 @@
-langchain
-qdrant-client
-openai
-tqdm
-python-dotenv
 fastapi
 uvicorn
 gunicorn
+python-dotenv
+langchain
+langchain-core
+langchain-community
+langchain-openai
+langchain-qdrant
+qdrant-client
